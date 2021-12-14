@@ -1,5 +1,5 @@
 import { request } from 'https';
-import { TwitterApiV2Settings } from '../settings';
+import { TwitterApiV2Settings, RequestOverrideSettings } from '../settings';
 import TweetStream from '../stream/TweetStream';
 import { ApiRequestError, ApiResponseError } from '../types';
 import type { ErrorV1, ErrorV2, TwitterRateLimit, TwitterResponse } from '../types';
@@ -193,6 +193,7 @@ export class RequestHandlerHelper<T> {
 
     this.req = request({
       ...this.requestData.options,
+      ...RequestOverrideSettings,
       // Define URL params manually, addresses dependencies error https://github.com/PLhery/node-twitter-api-v2/issues/94
       host: url.hostname,
       port: url.port || undefined,
