@@ -54,7 +54,7 @@ export class RequestHandlerHelper<T> {
 
   protected createRequestError(error: Error): ApiRequestError {
     if (TwitterApiV2Settings.debug) {
-      console.log('Request network error:', error);
+      TwitterApiV2Settings.logger('Request network error:', error);
     }
 
     return new ApiRequestError('Request failed.', {
@@ -75,7 +75,7 @@ export class RequestHandlerHelper<T> {
 
   protected createResponseError({ res, data, rateLimit, code }: IBuildErrorParams): ApiResponseError {
     if (TwitterApiV2Settings.debug) {
-      console.log('Request failed with code', code, ', data:', data, 'response headers:', res.headers);
+      TwitterApiV2Settings.logger('Request failed with code', code, ', data:', data, 'response headers:', JSON.stringify(res.headers));
     }
 
     // Errors formatting.
@@ -143,8 +143,8 @@ export class RequestHandlerHelper<T> {
     }
 
     if (TwitterApiV2Settings.debug) {
-      console.log(`[${this.requestData.options.method} ${this.hrefPathname}]: Request succeeds with code ${res.statusCode}`);
-      console.log('Response body:', data);
+      TwitterApiV2Settings.logger(`[${this.requestData.options.method} ${this.hrefPathname}]: Request succeeds with code ${res.statusCode}`);
+      TwitterApiV2Settings.logger('Response body:', JSON.stringify(data));
     }
 
     resolve({
@@ -159,7 +159,7 @@ export class RequestHandlerHelper<T> {
 
     if (code < 400) {
       if (TwitterApiV2Settings.debug) {
-        console.log(`[${this.requestData.options.method} ${this.hrefPathname}]: Request succeeds with code ${res.statusCode} (starting stream)`);
+        TwitterApiV2Settings.logger(`[${this.requestData.options.method} ${this.hrefPathname}]: Request succeeds with code ${res.statusCode} (starting stream)`);
       }
 
       // HTTP code ok, consume stream
@@ -174,12 +174,13 @@ export class RequestHandlerHelper<T> {
   protected debugRequest() {
     const url = this.requestData.url;
 
-    console.log(`[${this.requestData.options.method} ${this.hrefPathname}]`, this.requestData.options);
+    // NO options  ${this.requestData.options}
+    TwitterApiV2Settings.logger(`[${this.requestData.options.method} ${this.hrefPathname}]`);
     if (url.search) {
-      console.log('Request parameters:', [...url.searchParams.entries()].map(([key, value]) => `${key}: ${value}`));
+      TwitterApiV2Settings.logger(`Request parameters: ${JSON.stringify([...url.searchParams.entries()].map(([key, value]) => `${key}: ${value}`))}`);
     }
     if (this.requestData.body) {
-      console.log('Request body:', this.requestData.body);
+      TwitterApiV2Settings.logger(`Request body: ${this.requestData.body}`);
     }
   }
 
