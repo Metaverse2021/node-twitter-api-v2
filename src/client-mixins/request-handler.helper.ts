@@ -180,7 +180,7 @@ export class RequestHandlerHelper<T> {
       TwitterApiV2Settings.logger(`Request parameters: ${JSON.stringify([...url.searchParams.entries()].map(([key, value]) => `${key}: ${value}`))}`);
     }
     if (this.requestData.body) {
-      TwitterApiV2Settings.logger(`Request body: ${this.requestData.body}`);
+      TwitterApiV2Settings.logger('Request body: ', this.requestData.body);
     }
   }
 
