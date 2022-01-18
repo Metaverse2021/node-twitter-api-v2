@@ -402,7 +402,7 @@ export default class TwitterApiv1ReadWrite extends TwitterApiv1ReadOnly {
       let mediaCategory: string;
 
       // If explicit longmp4 OR explicit MIME type and not DM target
-      if (type === 'longmp4' || (type === 'video/mp4' && target !== 'dm')) {
+      if (type === 'longmp4' || (type === 'video/mp4' && target !== 'dm') || (type?.startsWith('video') && target !== 'dm')) {
         mediaCategory = 'amplify_video';
       } else {
         mediaCategory = getMediaCategoryByMime(mimeType, target ?? 'tweet');
