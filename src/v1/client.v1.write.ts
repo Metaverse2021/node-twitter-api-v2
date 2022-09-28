@@ -18,11 +18,15 @@ import {
   AccountProfileV1Params,
   FriendshipV1,
   FriendshipUpdateV1Params,
+  FriendshipCreateV1Params,
+  FriendshipDestroyV1Params,
+  FriendshipCreateOrDestroyV1,
   ListV1,
   ListCreateV1Params,
   GetListV1Params,
   AddOrRemoveListMembersV1Params,
   UpdateListV1Params,
+  EUploadMimeType,
 } from '../types';
 import * as fs from 'fs';
 import { getFileHandle, getFileSizeFromFileHandle, getMediaCategoryByMime, getMimeType, readFileIntoBuffer, readNextPartOf, sleepSecs, TFileHandle } from './media-helpers.v1';
@@ -57,6 +61,15 @@ export default class TwitterApiv1ReadWrite extends TwitterApiv1ReadOnly {
     };
 
     return this.post<TweetV1>('statuses/update.json', queryParams);
+  }
+
+  /**
+   * Quote an existing tweet.
+   * https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-statuses-update
+   */
+  public async quote(status: string, quotingStatusId: string, payload: Partial<SendTweetV1Params> = {}) {
+    const url = 'https://twitter.com/i/statuses/' + quotingStatusId;
+    return this.tweet(status, { ...payload, attachment_url: url });
   }
 
   /**
@@ -122,6 +135,22 @@ export default class TwitterApiv1ReadWrite extends TwitterApiv1ReadOnly {
    */
   public updateFriendship(options: Partial<FriendshipUpdateV1Params>) {
     return this.post<FriendshipV1>('friendships/update.json', options);
+  }
+
+  /**
+   * Follow the specified user.
+   * https://developer.twitter.com/en/docs/twitter-api/v1/accounts-and-users/follow-search-get-users/api-reference/post-friendships-create
+   */
+   public createFriendship(options: Partial<FriendshipCreateV1Params>) {
+    return this.post<FriendshipCreateOrDestroyV1>('friendships/create.json', options);
+  }
+
+  /**
+   * Unfollow the specified user.
+   * https://developer.twitter.com/en/docs/twitter-api/v1/accounts-and-users/follow-search-get-users/api-reference/post-friendships-destroy
+   */
+   public destroyFriendship(options: Partial<FriendshipDestroyV1Params>) {
+    return this.post<FriendshipCreateOrDestroyV1>('friendships/destroy.json', options);
   }
 
   /* Account API */
@@ -367,19 +396,25 @@ export default class TwitterApiv1ReadWrite extends TwitterApiv1ReadOnly {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       fullMediaData = await this.mediaInfo(fullMediaData.media_id_string);
+      const { processing_info } = fullMediaData;
 
-      if (!fullMediaData.processing_info || fullMediaData.processing_info.state === 'succeeded') {
+      if (!processing_info || processing_info.state === 'succeeded') {
         // Ok, completed!
         return;
       }
 
-      if (fullMediaData.processing_info.state === 'failed') {
+      if (processing_info.state === 'failed') {
+        if (processing_info.error) {
+          const { name, message } = processing_info.error;
+          throw new Error(`Failed to process media: ${name} - ${message}.`);
+        }
+
         throw new Error('Failed to process the media.');
       }
 
-      if (fullMediaData.processing_info.check_after_secs) {
+      if (processing_info.check_after_secs) {
         // Await for given seconds
-        await sleepSecs(fullMediaData.processing_info.check_after_secs);
+        await sleepSecs(processing_info.check_after_secs);
       }
       else {
         // No info; Await for 5 seconds
@@ -388,7 +423,7 @@ export default class TwitterApiv1ReadWrite extends TwitterApiv1ReadOnly {
     }
   }
 
-  protected async getUploadMediaRequirements(file: TUploadableMedia, { type, target }: Partial<UploadMediaV1Params> = {}) {
+  protected async getUploadMediaRequirements(file: TUploadableMedia, { mimeType, type, target, longVideo }: Partial<UploadMediaV1Params> = {}) {
     // Get the file handle (if not buffer)
     let fileHandle: TFileHandle;
 
@@ -396,23 +431,23 @@ export default class TwitterApiv1ReadWrite extends TwitterApiv1ReadOnly {
       fileHandle = await getFileHandle(file);
 
       // Get the mimetype
-      const mimeType = getMimeType(file, type);
+      const realMimeType = getMimeType(file, type, mimeType);
 
       // Get the media category
       let mediaCategory: string;
 
       // If explicit longmp4 OR explicit MIME type and not DM target
-      if (type === 'longmp4' || (type === 'video/mp4' && target !== 'dm') || (type?.startsWith('video') && target !== 'dm')) {
+      if (realMimeType === EUploadMimeType.Mp4 && ((!mimeType && !type && target !== 'dm') || longVideo)) {
         mediaCategory = 'amplify_video';
       } else {
-        mediaCategory = getMediaCategoryByMime(mimeType, target ?? 'tweet');
+        mediaCategory = getMediaCategoryByMime(realMimeType, target ?? 'tweet');
       }
 
       return {
         fileHandle,
         mediaCategory,
         fileSize: await getFileSizeFromFileHandle(fileHandle),
-        mimeType,
+        mimeType: realMimeType,
       };
     } catch (e) {
       // Close file if any

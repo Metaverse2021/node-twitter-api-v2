@@ -1,4 +1,5 @@
 import { UserEntitiesV1 } from './entities.v1.types';
+import { TweetV1 } from './tweet.v1.types';
 
 // - Entities -
 
@@ -51,6 +52,18 @@ export interface DoubleEndedIdCursorV1Result {
 export interface DoubleEndedIdCursorV1Params {
   stringify_ids?: boolean;
   cursor?: string;
+}
+
+export interface UserFriendsIdsV1Params extends DoubleEndedIdCursorV1Params {
+  screen_name?: string;
+  user_id?: string;
+  count?: number;
+}
+
+export interface UserFollowerIdsV1Params extends DoubleEndedIdCursorV1Params {
+  screen_name?: string;
+  user_id?: string;
+  count?: number;
 }
 
 export interface VerifyCredentialsV1Params {
@@ -142,6 +155,17 @@ export interface FriendshipUpdateV1Params {
   retweets?: boolean;
 }
 
+export interface FriendshipCreateV1Params {
+  screen_name?: string;
+  user_id?: string;
+  follow?: boolean;
+}
+
+export interface FriendshipDestroyV1Params {
+  screen_name?: string;
+  user_id?: string;
+}
+
 export type UserShowV1Params = TUserIdOrScreenName & TUserObjectParams;
 export type UserLookupV1Params = {
   user_id?: string | string[];
@@ -161,6 +185,10 @@ export interface MuteUserListV1Result {
 
 // GET mutes/users/ids
 export type MuteUserIdsV1Result = DoubleEndedIdCursorV1Result;
+
+export type UserFollowerIdsV1Result = DoubleEndedIdCursorV1Result;
+
+export type UserFriendIdsV1Result = DoubleEndedIdCursorV1Result;
 
 // GET users/profile_banner
 export interface BannerSizeV1 {
@@ -248,6 +276,10 @@ export interface FriendshipV1 {
     source: FriendshipRelationObjectV1;
     target: FriendshipRelationObjectV1;
   };
+}
+
+export interface FriendshipCreateOrDestroyV1 extends UserV1 {
+  status: TweetV1
 }
 
 export interface FriendshipLookupV1 {

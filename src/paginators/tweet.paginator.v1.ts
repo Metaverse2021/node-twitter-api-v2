@@ -14,12 +14,16 @@ abstract class TweetTimelineV1Paginator<
   TParams extends TweetV1TimelineParams,
   TShared = any,
 > extends TwitterPaginator<TResult, TParams, TweetV1, TShared> {
+  protected hasFinishedFetch = false;
+
   protected refreshInstanceFromResult(response: TwitterResponse<TResult>, isNextPage: true) {
     const result = response.data;
     this._rateLimit = response.rateLimit!;
 
     if (isNextPage) {
       this._realData.push(...result);
+      // HINT: This is an approximation, as "end" of pagination cannot be safely determined without cursors.
+      this.hasFinishedFetch = result.length === 0;
     }
   }
 
@@ -54,6 +58,10 @@ abstract class TweetTimelineV1Paginator<
   get tweets() {
     return this._realData;
   }
+
+  get done() {
+    return super.done || this.hasFinishedFetch;
+  }
 }
 
 // Timelines
@@ -76,4 +84,9 @@ export class UserTimelineV1Paginator extends TweetTimelineV1Paginator<TweetV1Tim
 // Lists
 export class ListTimelineV1Paginator extends TweetTimelineV1Paginator<TweetV1TimelineResult, ListStatusesV1Params> {
   protected _endpoint = 'lists/statuses.json';
+}
+
+// Favorites
+export class UserFavoritesV1Paginator extends TweetTimelineV1Paginator<TweetV1TimelineResult, TweetV1UserTimelineParams> {
+  protected _endpoint = 'favorites/list.json';
 }

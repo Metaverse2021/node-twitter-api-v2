@@ -25,9 +25,15 @@ export interface PlaybackCountV2 {
 
 export type OrganicMetricV2 = PlaybackCountV2 & { view_count: number };
 
+export interface MediaVariantsV2 {
+  bit_rate?: number;
+  content_type: 'video/mp4' | 'application/x-mpegURL' | string;
+  url: string
+}
+
 export interface MediaObjectV2 {
   media_key: string;
-  type: string;
+  type: 'video' | 'animated_gif' | 'photo' | string;
   duration_ms?: number;
   height?: number;
   width?: number;
@@ -38,6 +44,7 @@ export interface MediaObjectV2 {
   organic_metrics?: OrganicMetricV2;
   promoted_metrics?: OrganicMetricV2;
   public_metrics?: { view_count: number };
+  variants?: MediaVariantsV2[];
 }
 
 export interface PollV2 {
@@ -117,6 +124,7 @@ export interface TweetEntityMentionV2 {
   start: number;
   end: number;
   username: string;
+  id: string;
 }
 
 export interface TweetEntitiesV2 {

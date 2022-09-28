@@ -42,6 +42,18 @@ import {
   BatchComplianceV2Params,
   BatchComplianceV2JobResult,
   BatchComplianceJobV2,
+  GetListV2Params,
+  ListGetV2Result,
+  GetListTimelineV2Params,
+  ListTimelineV2Result,
+  TweetRetweetedOrLikedByV2Params,
+  TweetRetweetedOrLikedByV2ParamsWithPaginator,
+  TweetRetweetedOrLikedByV2ParamsWithoutPaginator,
+  SpaceV2BuyersParams,
+  SpaceV2BuyersResult,
+  TweetV2PaginableTimelineResult,
+  TweetV2HomeTimelineParams,
+  TweetV2HomeTimelineResult,
 } from '../types';
 import {
   TweetSearchAllV2Paginator,
@@ -49,9 +61,16 @@ import {
   TweetUserMentionTimelineV2Paginator,
   TweetUserTimelineV2Paginator,
   TweetV2UserLikedTweetsPaginator,
+  UserOwnedListsV2Paginator,
+  UserListMembershipsV2Paginator,
+  UserListFollowedV2Paginator,
+  TweetV2ListTweetsPaginator,
+  TweetBookmarksTimelineV2Paginator,
+  QuotedTweetsTimelineV2Paginator,
+  TweetHomeTimelineV2Paginator,
 } from '../paginators';
 import TwitterApiv2LabsReadOnly from '../v2-labs/client.v2.labs.read';
-import { UserBlockingUsersV2Paginator, UserFollowersV2Paginator, UserFollowingV2Paginator, UserMutingUsersV2Paginator } from '../paginators/user.paginator.v2';
+import { TweetLikingUsersV2Paginator, TweetRetweetersUsersV2Paginator, UserBlockingUsersV2Paginator, UserFollowersV2Paginator, UserFollowingV2Paginator, UserListFollowersV2Paginator, UserListMembersV2Paginator, UserMutingUsersV2Paginator } from '../paginators/user.paginator.v2';
 import { isTweetStreamV2ErrorPayload } from '../helpers';
 import TweetStream from '../stream/TweetStream';
 import { PromiseOrType } from '../types/shared.types';
@@ -80,8 +99,13 @@ export default class TwitterApiv2ReadOnly extends TwitterApiSubClient {
    * The recent search endpoint returns Tweets from the last seven days that match a search query.
    * https://developer.twitter.com/en/docs/twitter-api/tweets/search/api-reference/get-tweets-search-recent
    */
-  public async search(query: string, options: Partial<Tweetv2SearchParams> = {}) {
-    const queryParams = { ...options, query };
+  public async search(options: Partial<Tweetv2SearchParams>): Promise<TweetSearchRecentV2Paginator>;
+  public async search(query: string, options?: Partial<Tweetv2SearchParams>): Promise<TweetSearchRecentV2Paginator>;
+  public async search(queryOrOptions: string | Partial<Tweetv2SearchParams>, options: Partial<Tweetv2SearchParams> = {}) {
+    const query = typeof queryOrOptions === 'string' ? queryOrOptions : undefined;
+    const realOptions = typeof queryOrOptions === 'object' && queryOrOptions !== null ? queryOrOptions : options;
+
+    const queryParams = { ...realOptions, query };
     const initialRq = await this.get<Tweetv2SearchResult>('tweets/search/recent', queryParams, { fullResponse: true });
 
     return new TweetSearchRecentV2Paginator({
@@ -156,16 +180,76 @@ export default class TwitterApiv2ReadOnly extends TwitterApiSubClient {
    * Allows you to get information about who has Retweeted a Tweet.
    * https://developer.twitter.com/en/docs/twitter-api/tweets/retweets/api-reference/get-tweets-id-retweeted_by
    */
-  public tweetRetweetedBy(tweetId: string, options: Partial<UsersV2Params> = {}) {
-    return this.get<TweetV2RetweetedByResult>('tweets/:id/retweeted_by', options, { params: { id: tweetId } });
+  public tweetRetweetedBy(tweetId: string, options?: Partial<TweetRetweetedOrLikedByV2ParamsWithoutPaginator>): Promise<TweetV2RetweetedByResult>;
+  public tweetRetweetedBy(tweetId: string, options: TweetRetweetedOrLikedByV2ParamsWithPaginator): Promise<TweetRetweetersUsersV2Paginator>;
+  public async tweetRetweetedBy(tweetId: string, options: TweetRetweetedOrLikedByV2Params = {}) {
+    const { asPaginator, ...parameters } = options;
+    const initialRq = await this.get<TweetV2RetweetedByResult>('tweets/:id/retweeted_by', parameters as any, {
+      fullResponse: true,
+      params: { id: tweetId },
+    });
+
+    if (!asPaginator) {
+      return initialRq.data;
+    }
+
+    return new TweetRetweetersUsersV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: parameters,
+      sharedParams: { id: tweetId },
+    });
   }
 
   /**
    * Allows you to get information about who has Liked a Tweet.
    * https://developer.twitter.com/en/docs/twitter-api/tweets/likes/api-reference/get-tweets-id-liking_users
    */
-  public tweetLikedBy(tweetId: string, options: Partial<UsersV2Params> = {}) {
-    return this.get<TweetV2LikedByResult>('tweets/:id/liking_users', options, { params: { id: tweetId } });
+  public tweetLikedBy(tweetId: string, options?: Partial<TweetRetweetedOrLikedByV2ParamsWithoutPaginator>): Promise<TweetV2LikedByResult>;
+  public tweetLikedBy(tweetId: string, options: TweetRetweetedOrLikedByV2ParamsWithPaginator): Promise<TweetLikingUsersV2Paginator>;
+  public async tweetLikedBy(tweetId: string, options: TweetRetweetedOrLikedByV2Params = {}) {
+    const { asPaginator, ...parameters } = options;
+    const initialRq = await this.get<TweetV2LikedByResult>('tweets/:id/liking_users', parameters as any, {
+      fullResponse: true,
+      params: { id: tweetId },
+    });
+
+    if (!asPaginator) {
+      return initialRq.data;
+    }
+
+    return new TweetLikingUsersV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: parameters,
+      sharedParams: { id: tweetId },
+    });
+  }
+
+  /**
+   * Allows you to retrieve a collection of the most recent Tweets and Retweets posted by you and users you follow, also known as home timeline.
+   * This endpoint returns up to the last 3200 Tweets.
+   * https://developer.twitter.com/en/docs/twitter-api/tweets/timelines/api-reference/get-users-id-reverse-chronological
+   *
+   * OAuth 2 scopes: `tweet.read` `users.read`
+   */
+  public async homeTimeline(options: Partial<TweetV2HomeTimelineParams> = {}) {
+    const meUser = await this.getCurrentUserV2Object();
+
+    const initialRq = await this.get<TweetV2HomeTimelineResult>('users/:id/timelines/reverse_chronological', options, {
+      fullResponse: true,
+      params: { id: meUser.data.id },
+    });
+
+    return new TweetHomeTimelineV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: options,
+      sharedParams: { id: meUser.data.id },
+    });
   }
 
   /**
@@ -210,7 +294,62 @@ export default class TwitterApiv2ReadOnly extends TwitterApiSubClient {
     });
   }
 
+  /**
+   * Returns Quote Tweets for a Tweet specified by the requested Tweet ID.
+   * https://developer.twitter.com/en/docs/twitter-api/tweets/quote-tweets/api-reference/get-tweets-id-quote_tweets
+   *
+   * OAuth2 scopes: `users.read` `tweet.read`
+   */
+  public async quotes(tweetId: string, options: Partial<TweetV2PaginableTimelineParams> = {}) {
+    const initialRq = await this.get<TweetV2PaginableTimelineResult>('tweets/:id/quote_tweets', options, {
+      fullResponse: true,
+      params: { id: tweetId },
+    });
+
+    return new QuotedTweetsTimelineV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: options,
+      sharedParams: { id: tweetId },
+    });
+  }
+
+  /* Bookmarks */
+
+  /**
+   * Allows you to get information about a authenticated user’s 800 most recent bookmarked Tweets.
+   * https://developer.twitter.com/en/docs/twitter-api/tweets/bookmarks/api-reference/get-users-id-bookmarks
+   *
+   * OAuth2 scopes: `users.read` `tweet.read` `bookmark.read`
+   */
+  public async bookmarks(options: Partial<TweetV2PaginableTimelineParams> = {}) {
+    const user = await this.getCurrentUserV2Object();
+    const initialRq = await this.get<TweetV2PaginableTimelineResult>('users/:id/bookmarks', options, {
+      fullResponse: true,
+      params: { id: user.data.id },
+    });
+
+    return new TweetBookmarksTimelineV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: options,
+      sharedParams: { id: user.data.id },
+    });
+  }
+
   /* Users */
+
+  /**
+   * Returns information about an authorized user.
+   * https://developer.twitter.com/en/docs/twitter-api/users/lookup/api-reference/get-users-me
+   *
+   * OAuth2 scopes: `tweet.read` & `users.read`
+   */
+  public me(options: Partial<UsersV2Params> = {}) {
+    return this.get<UserV2Result>('users/me', options);
+  }
 
   /**
    * Returns a variety of information about a single user specified by the requested ID.
@@ -277,7 +416,7 @@ export default class TwitterApiv2ReadOnly extends TwitterApiSubClient {
    * Returns a list of users the specified user ID is following.
    * https://developer.twitter.com/en/docs/twitter-api/users/follows/api-reference/get-users-id-following
    *
-   * OAuth2 scope: `account.follows.read`
+   * OAuth2 scope: `follows.read`
    */
   public following(userId: string, options?: Partial<FollowersV2ParamsWithoutPaginator>): Promise<UserV2TimelineResult>;
   public following(userId: string, options: FollowersV2ParamsWithPaginator): Promise<UserFollowingV2Paginator>;
@@ -351,6 +490,118 @@ export default class TwitterApiv2ReadOnly extends TwitterApiSubClient {
     });
   }
 
+  /* Lists */
+
+  /**
+   * Returns the details of a specified List.
+   * https://developer.twitter.com/en/docs/twitter-api/lists/list-lookup/api-reference/get-lists-id
+   */
+  public list(id: string, options: Partial<GetListV2Params> = {}) {
+    return this.get<ListGetV2Result>('lists/:id', options, { params: { id } });
+  }
+
+  /**
+   * Returns all Lists owned by the specified user.
+   * https://developer.twitter.com/en/docs/twitter-api/lists/list-lookup/api-reference/get-users-id-owned_lists
+   */
+  public async listsOwned(userId: string, options: Partial<GetListTimelineV2Params> = {}) {
+    const params = { id: userId };
+    const initialRq = await this.get<ListTimelineV2Result>('users/:id/owned_lists', options, { fullResponse: true, params });
+
+    return new UserOwnedListsV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: { ...options },
+      sharedParams: params,
+    });
+  }
+
+  /**
+   * Returns all Lists a specified user is a member of.
+   * https://developer.twitter.com/en/docs/twitter-api/lists/list-members/api-reference/get-users-id-list_memberships
+   */
+  public async listMemberships(userId: string, options: Partial<GetListTimelineV2Params> = {}) {
+    const params = { id: userId };
+    const initialRq = await this.get<ListTimelineV2Result>('users/:id/list_memberships', options, { fullResponse: true, params });
+
+    return new UserListMembershipsV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: { ...options },
+      sharedParams: params,
+    });
+  }
+
+  /**
+   * Returns all Lists a specified user follows.
+   * https://developer.twitter.com/en/docs/twitter-api/lists/list-follows/api-reference/get-users-id-followed_lists
+   */
+  public async listFollowed(userId: string, options: Partial<GetListTimelineV2Params> = {}) {
+    const params = { id: userId };
+    const initialRq = await this.get<ListTimelineV2Result>('users/:id/followed_lists', options, { fullResponse: true, params });
+
+    return new UserListFollowedV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: { ...options },
+      sharedParams: params,
+    });
+  }
+
+  /**
+   * Returns a list of Tweets from the specified List.
+   * https://developer.twitter.com/en/docs/twitter-api/lists/list-tweets/api-reference/get-lists-id-tweets
+   */
+  public async listTweets(listId: string, options: Partial<TweetV2PaginableListParams> = {}) {
+    const params = { id: listId };
+    const initialRq = await this.get<Tweetv2ListResult>('lists/:id/tweets', options, { fullResponse: true, params });
+
+    return new TweetV2ListTweetsPaginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: { ...options },
+      sharedParams: params,
+    });
+  }
+
+  /**
+   * Returns a list of users who are members of the specified List.
+   * https://developer.twitter.com/en/docs/twitter-api/lists/list-members/api-reference/get-lists-id-members
+   */
+  public async listMembers(listId: string, options: Partial<UserV2TimelineParams> = {}) {
+    const params = { id: listId };
+    const initialRq = await this.get<UserV2TimelineResult>('lists/:id/members', options, { fullResponse: true, params });
+
+    return new UserListMembersV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: { ...options },
+      sharedParams: params,
+    });
+  }
+
+  /**
+   * Returns a list of users who are followers of the specified List.
+   * https://developer.twitter.com/en/docs/twitter-api/lists/list-follows/api-reference/get-lists-id-followers
+   */
+  public async listFollowers(listId: string, options: Partial<UserV2TimelineParams> = {}) {
+    const params = { id: listId };
+    const initialRq = await this.get<UserV2TimelineResult>('lists/:id/followers', options, { fullResponse: true, params });
+
+    return new UserListFollowersV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: { ...options },
+      sharedParams: params,
+    });
+  }
+
   /* Spaces */
 
   /**
@@ -389,6 +640,20 @@ export default class TwitterApiv2ReadOnly extends TwitterApiSubClient {
    */
   public searchSpaces(options: SpaceV2SearchParams) {
     return this.get<SpaceV2LookupResult>('spaces/search', options as Partial<SpaceV2SearchParams>);
+  }
+
+   /**
+   * Returns a list of user who purchased a ticket to the requested Space.
+   * You must authenticate the request using the Access Token of the creator of the requested Space.
+   *
+   * **OAuth 2.0 Access Token required**
+   *
+   * https://developer.twitter.com/en/docs/twitter-api/spaces/lookup/api-reference/get-spaces-id-buyers
+   *
+   * OAuth2 scopes: `tweet.read`, `users.read`, `space.read`.
+   */
+  public spaceBuyers(spaceId: string, options: Partial<SpaceV2BuyersParams> = {}) {
+    return this.get<SpaceV2BuyersResult>('spaces/:id/buyers', options, { params: { id: spaceId } });
   }
 
   /* Streaming API */
@@ -431,7 +696,7 @@ export default class TwitterApiv2ReadOnly extends TwitterApiSubClient {
 
   /**
    * Streams about 1% of all Tweets in real-time.
-   * https://developer.twitter.com/en/docs/twitter-api/tweets/sampled-stream/api-reference/get-tweets-sample-stream
+   * https://developer.twitter.com/en/docs/twitter-api/tweets/volume-streams/api-reference/get-tweets-sample-stream
    */
   public sampleStream(options?: Partial<Tweetv2FieldsParams> & { autoConnect?: true }): Promise<TweetStream<TweetV2SingleResult>>;
   public sampleStream(options: Partial<Tweetv2FieldsParams> & { autoConnect: false }): TweetStream<TweetV2SingleResult>;

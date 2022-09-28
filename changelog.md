@@ -1,7 +1,117 @@
+1.12.7
+------
+- Fix: Fix Exception throw when response data is truthy but not an object (for example, a raw HTML page) #354
+- Fix: Typing issue with `TwitterApiErrorData.errors` that can be `undefined` in some cases #357
+- Feat: Add `include_rts` parameters for `.userTimeline` #349
+
+1.12.6
+------
+- Feat: add follow and unfollow api V1 methods (thanks to @Abdullah-Malik)
+
+1.12.5
+------
+- Fix: Better check for error presence in `ApiResponseError` instanciation
+
+1.12.4
+------
+- Fix: Ignore rate limit data for endpoints without rate limit headers in paginators #341
+- Fix: Patch for unifiying endpoints with various error payload in v1 API #342
+- Feat: `variants` property for `media.fields`, add `MediaVariantsV2` interface (thanks to @roncli) #347
+
+1.12.3
+------
+- Feat: .favoriteTimeline for API v1 #296 (thanks to @AuroraDysis)
+- Feat: duration_millis property for v1 medias (thanks to @RyoshiKayo)
+- Feat: source_user_id and source_user_id_str missing properties in MediaEntityV1 (thanks to @AuroraDysis)
+
+1.12.2
+------
+- Feat: .homeTimeline for API v2 #288
+
+1.12.1
+------
+- Fix: missing id prop of TweetEntityMentionV2 #274 (@lima-eduardo)
+- Fix: add place_id to SendTweetV1Params #287 (@viniciuskneves)
+
+1.12.0
+------
+- Feat: Update plugin API to support response overloading on error #248
+- Feat: `.quote` method to create a retweet with comment (quoted tweet) in `v1` and `v2` #260 (@jonah-saltzman)
+
+1.11.3
+------
+- Feat: New spaces features: `topic_ids` and `ended_at` on space object, `/spaces/:id/buyers` endpoint #237
+- Feat: New bookmarks API #237
+- Feat: New Quoted tweets endpoint #237
+- Feat: Allow v2.search to be used without query parameter #252
+- Fix: Usertimeline v1 endpoint .done property value is false #238
+- Feat: `sort_order` parameter #246 (@nolbuzanis)
+- Fix: Better error message for failed media uploads #244 (@nolbuzanis)
+
+1.11.2
+------
+- Fix: .meta is not correctly typed in paginators #231
+- Fix: Catched promise is rejected without ability of catching it later when a request fails and a plugin is used #229
+
+1.11.1
+------
+- Feat: Support error hooks in plugins #226 #227
+- Fix: Bypass Twitter v2 incoherence by converting `start_time` to a valid `since_id` when `until_id` is used in paginators #197 #228
+- Feat: Getter for DM images `.v1.downloadDmImage` to download images hosted on `ton.twitter.com` protected by OAuth 1.0a
+
+1.11.0
+------
+- Feat: Support plugins (more features coming soon as plugins!)
+- Feat: Compression level can now be specified explicitly
+- Refactor: `.v1.uploadMedia()` now accept `options.mimeType` and `options.longVideo` as argument, in replacement of `options.type` (which is now deprecated)
+- Fix: OAuth2 scope incorrectly encoded #184
+
+1.10.3
+------
+- Feat: Native support of gzip compression for streaming endpoints
+- Feat: Native support of brotli (25% more compressed than gzip) compression for non-streaming endpoints, when available
+
+1.10.2
+------
+- Feat: Native support of gzip/deflate compression for non-streaming endpoints
+
+1.10.1
+------
+- Fix: Crash when a v2 paginator is empty and response does not contains a `.meta` property #177
+- Fix: "Memory leak" when response are abruptly closed by Twitter or OS, because no close/error listener on response object was attributed
+
+1.10.0
+------
+- Feat: Pagination support for `tweets/:id/liking_users` and `tweets/:id/retweeted_by` #165
+- Feat: Support custom Node HTTP agents #149
+- Doc: Better example for `.v2.me()` and fix typos #160 #164 (thanks to @rbochenek and @ShubhamKushwah)
+
+1.9.1
+-----
+- Fix: Use next_token instead of until_id if pagination token available #152
+
+1.9.0
+-----
+- Feat: Helpers for v2 includes
+- Feat: Support for custom debug loggers
+- Fix: Errors accessor to get API errors in paginators #145
+- Fix: Correctly update .includes/.meta/.errors in paginators when using async iterator #142
+- Fix: Incorrect HTTP method for GET lists #147 #148
+- Doc: Better doc & examples for OAuth 2.0 user-context
+
+1.8.1
+-----
+- Feat: Add every GET lists v2 endpoints
+
+1.8.0
+-----
+- Feat: Add OAuth2 user-context support
+- Feat: Add users/me v2 endpoint wrapper
+
 1.7.2
 -----
 - Fix: Paginator can return multiple times the same results in some conditions
-- Feat: .done properties for paginators, to know when a next page is fetchable
+- Feat: .done property for paginators, to know when a next page is fetchable
 
 1.7.1
 -----

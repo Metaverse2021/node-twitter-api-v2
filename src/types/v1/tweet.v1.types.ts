@@ -82,6 +82,7 @@ export interface TweetV1TimelineParams extends AskTweetV1Params {
 export interface TweetV1UserTimelineParams extends TweetV1TimelineParams {
   user_id?: string;
   screen_name?: string;
+  include_rts?: boolean;
 }
 
 export interface SendTweetV1Params extends AskTweetV1Params {
@@ -98,17 +99,30 @@ export interface SendTweetV1Params extends AskTweetV1Params {
   enable_dmcommands?: BooleanString;
   fail_dmcommands?: BooleanString;
   card_uri?: string;
+  place_id?: string;
 }
 
 export type TUploadTypeV1 = 'mp4' | 'longmp4' | 'gif' | 'jpg' | 'png' | 'srt' | 'webp';
 
+export enum EUploadMimeType {
+  Jpeg = 'image/jpeg',
+  Mp4 = 'video/mp4',
+  Gif = 'image/gif',
+  Png = 'image/png',
+  Srt = 'text/plain',
+  Webp = 'image/webp'
+}
+
 export interface UploadMediaV1Params {
+  /** @deprecated Directly use `mimeType` parameter with one of the allowed MIME types in `EUploadMimeType`. */
   type: TUploadTypeV1 | string;
-  chunkLength: number;
-  additionalOwners: string;
-  maxConcurrentUploads: number;
+  mimeType: EUploadMimeType | string;
   target: 'tweet' | 'dm';
-  shared?: boolean;
+  chunkLength: number;
+  shared: boolean;
+  longVideo: boolean;
+  additionalOwners: string | string[];
+  maxConcurrentUploads: number;
 }
 
 export interface MediaMetadataV1Params {
@@ -173,6 +187,11 @@ export interface MediaStatusV1Result {
     state: 'pending' | 'failed' | 'succeeded' | 'in_progress';
     check_after_secs?: number;
     progress_percent?: number;
+    error?: {
+      code: number;
+      name: string;
+      message: string;
+    };
   };
 }
 

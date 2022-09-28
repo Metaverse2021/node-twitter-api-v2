@@ -19,6 +19,7 @@ import type {
   UserV2FollowResult,
   UserV2MuteResult,
   UserV2UnfollowResult,
+  TweetV2BookmarkResult,
 } from '../types';
 import TwitterApiv2LabsReadWrite from '../v2-labs/client.v2.labs.write';
 
@@ -130,6 +131,14 @@ export default class TwitterApiv2ReadWrite extends TwitterApiv2ReadOnly {
   }
 
   /**
+   * Quote an existing Tweet on behalf of an authenticated user.
+   * https://developer.twitter.com/en/docs/twitter-api/tweets/manage-tweets/api-reference/post-tweets
+   */
+  public quote(status: string, quotedTweetId: string, payload: Partial<SendTweetV2Params> = {}) {
+    return this.tweet(status, { ...payload, quote_tweet_id: quotedTweetId });
+  }
+
+  /**
    * Post a series of tweets.
    * https://developer.twitter.com/en/docs/twitter-api/tweets/manage-tweets/api-reference/post-tweets
    */
@@ -167,6 +176,30 @@ export default class TwitterApiv2ReadWrite extends TwitterApiv2ReadOnly {
     });
   }
 
+  /* Bookmarks */
+
+  /**
+   * Causes the user ID of an authenticated user identified in the path parameter to Bookmark the target Tweet provided in the request body.
+   * https://developer.twitter.com/en/docs/twitter-api/tweets/bookmarks/api-reference/post-users-id-bookmarks
+   *
+   * OAuth2 scopes: `users.read` `tweet.read` `bookmark.write`
+   */
+  public async bookmark(tweetId: string) {
+    const user = await this.getCurrentUserV2Object();
+    return this.post<TweetV2BookmarkResult>('users/:id/bookmarks', { tweet_id: tweetId }, { params: { id: user.data.id } });
+  }
+
+  /**
+   * Allows a user or authenticated user ID to remove a Bookmark of a Tweet.
+   * https://developer.twitter.com/en/docs/twitter-api/tweets/bookmarks/api-reference/delete-users-id-bookmarks-tweet_id
+   *
+   * OAuth2 scopes: `users.read` `tweet.read` `bookmark.write`
+   */
+  public async deleteBookmark(tweetId: string) {
+    const user = await this.getCurrentUserV2Object();
+    return this.delete<TweetV2BookmarkResult>('users/:id/bookmarks/:tweet_id', undefined, { params: { id: user.data.id, tweet_id: tweetId } });
+  }
+
   /* Users */
 
   /**
@@ -174,7 +207,7 @@ export default class TwitterApiv2ReadWrite extends TwitterApiv2ReadOnly {
    * If the target user does not have public Tweets, this endpoint will send a follow request.
    * https://developer.twitter.com/en/docs/twitter-api/users/follows/api-reference/post-users-source_user_id-following
    *
-   * OAuth2 scope: `account.follows.write`
+   * OAuth2 scope: `follows.write`
    *
    * **Note**: You must specify the currently logged user ID ; you can obtain it through v1.1 API.
    */
@@ -186,7 +219,7 @@ export default class TwitterApiv2ReadWrite extends TwitterApiv2ReadOnly {
    * Allows a user ID to unfollow another user.
    * https://developer.twitter.com/en/docs/twitter-api/users/follows/api-reference/delete-users-source_id-following
    *
-   * OAuth2 scope: `account.follows.write`
+   * OAuth2 scope: `follows.write`
    *
    * **Note**: You must specify the currently logged user ID ; you can obtain it through v1.1 API.
    */

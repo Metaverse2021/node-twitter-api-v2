@@ -1,13 +1,19 @@
 import { Agent } from 'http';
 
-export const TwitterApiV2Settings: {
-  debug: boolean
-  logger: (message?: any, ...optionalParams: any[]) => void
-  deprecationWarnings: boolean
-} = {
+export interface ITwitterApiV2Settings {
+  debug: boolean;
+  deprecationWarnings: boolean;
+  logger: ITwitterApiV2SettingsLogger;
+}
+
+export interface ITwitterApiV2SettingsLogger {
+  log(message: string, payload?: any): void;
+}
+
+export const TwitterApiV2Settings: ITwitterApiV2Settings = {
   debug: false,
-  logger: console.log,
   deprecationWarnings: true,
+  logger: { log: console.log.bind(console) },
 };
 
 export const RequestOverrideSettings: {

@@ -25,7 +25,7 @@ import { TwitterApi } from 'twitter-api-v2';
 const { TwitterApi } = require('twitter-api-v2');
 ```
 
-Instanciate with your wanted authentification method.
+Instantiate with your wanted authentication method.
 
 ```ts
 // OAuth 1.0a (User context)
@@ -39,7 +39,7 @@ const userClient = new TwitterApi({
   accessSecret: 'accessOAuthSecret',
 });
 
-// OAuth2 (App-only context)
+// OAuth2 (app-only or user context)
 // Create a client with an already known bearer token
 const appOnlyClient = new TwitterApi('bearerToken');
 // OR - you can also create a app-only client from your consumer keys -
@@ -57,21 +57,31 @@ you can choose the right sub-client:
 - `Read-write`: `rwClient = client.readWrite`
 - `Read-only`: `roClient = client.readOnly`
 
-## Authentification
+## Authentication
 
-Please see [Authentification part](./auth.md) of the doc.
+Please see [Authentication part](./auth.md) of the doc.
 
 ### Get current user
 
-If you want to access currently logged user (= you're logged with OAuth 1.0a context),
+#### v1 API
+
+If you want to access currently the logged user inside v1 API (= you're logged with OAuth 1.0a/OAuth2 user-context),
 you can use the method `.currentUser()`.
 
 This a shortcut to `.v1.verifyCredentials()` with a **cache that store user to avoid multiple API calls**.
 Its returns a `UserV1` object.
 
-## Use the versionned API clients - URL prefixes
+#### v2 API
 
-By default, `twitter-api-v2` don't know which version of API you want to use (because it supports both!).
+If you want to access the currently logged user inside v2 API,
+you can use the method `.currentUserV2()`.
+
+This a shortcut to `.v2.me()` with a **cache that store user to avoid multiple API calls**.
+Its returns a `UserV2Result` object.
+
+## Use the versioned API clients - URL prefixes
+
+By default, `twitter-api-v2` doesn't know which version of the API you want to use (because it supports both!).
 
 For this reason, we allow you to choose which version you want to use: `v1` or `v2`!
 ```ts
@@ -82,11 +92,30 @@ const v2Client = client.v2;
 const v2LabsClient = client.v2.labs;
 ```
 
-Using the versionned client **auto-prefix requests** with default prefixes
+Using the versioned client **auto-prefix requests** with default prefixes
 (for v1: `https://api.twitter.com/1.1/`, for v2: `https://api.twitter.com/2/`,
 for labs v2: `https://api.twitter.com/labs/2/`)
-and gives you access to endpoint-wrapper methods!
+and this gives you access to endpoint-wrapper methods!
 
 ## Use the endpoint-wrapper methods
 
 See the [documentation for v1 client API](./v1.md) or [documentation for v2 client API](./v2.md).
+
+## Make requests behind a proxy
+
+If your network connection is behind a proxy and you don't be able to make requests with the default configuration, you can use a custom HTTP agent to configure this behavior.
+
+```ts
+// Note: this package is an external package, it isn't bundled with Node.
+import * as HttpProxyAgent from 'https-proxy-agent';
+
+// HTTPS proxy to connect to
+// twitter-api-v2 will always use HTTPS
+const proxy = process.env.HTTP_PROXY || 'https://1.1.1.1:3000';
+
+// create an instance of the `HttpProxyAgent` class with the proxy server information
+const httpAgent = new HttpProxyAgent(proxy);
+
+// Instanciate helper with the agent
+const client = new TwitterApi('<bearerToken>', { httpAgent });
+```

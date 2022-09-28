@@ -1,3 +1,7 @@
+import type { Agent } from 'http';
+import type { ITwitterApiClientPlugin } from './plugins';
+import type { TRequestCompressionLevel } from './request-maker.mixin.types';
+
 export enum ETwitterStreamEvent {
   Connected = 'connected',
   ConnectError = 'connect error',
@@ -24,6 +28,7 @@ export interface TwitterApiTokens {
 
 export interface TwitterApiOAuth2Init {
   clientId: string;
+  clientSecret?: string;
 }
 
 export interface TwitterApiBasicAuth {
@@ -59,3 +64,10 @@ export interface IClientTokenNone {
 }
 
 export type TClientTokens = IClientTokenNone | IClientTokenBearer | IClientTokenOauth | IClientTokenBasic | IClientOAuth2UserClient;
+
+export interface IClientSettings {
+  /** Used to send HTTPS requests. This is mostly used to make requests work behind a proxy. */
+  httpAgent: Agent;
+  plugins: ITwitterApiClientPlugin[];
+  compression: TRequestCompressionLevel;
+}

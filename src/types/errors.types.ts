@@ -39,7 +39,8 @@ export interface TwitterErrorPayload<T = any> {
 }
 
 export interface TwitterApiErrorData {
-  errors: (ErrorV1 | ErrorV2)[];
+  errors?: (ErrorV1 | ErrorV2)[];
+  error?: string;
   title?: string;
   detail?: string;
   type?: string;
@@ -47,6 +48,7 @@ export interface TwitterApiErrorData {
 
 export enum ETwitterApiError {
   Request = 'request',
+  PartialResponse = 'partial-response',
   Response = 'response',
 }
 
@@ -68,7 +70,7 @@ export interface TwitterApiError extends TwitterResponse<TwitterApiErrorData> {
 /* ERRORS INSTANCES */
 
 abstract class ApiError extends Error {
-  abstract type: ETwitterApiError.Request | ETwitterApiError.Response;
+  abstract type: ETwitterApiError.Request | ETwitterApiError.Response | ETwitterApiError.PartialResponse;
   abstract request: ClientRequest;
   error = true as const;
 }
@@ -108,6 +110,51 @@ export class ApiRequestError extends ApiError implements TwitterApiRequestError 
   }
 }
 
+interface IBuildApiPartialRequestError {
+  readonly request: ClientRequest;
+  readonly response: IncomingMessage;
+  readonly rawContent: string;
+  responseError: Error;
+}
+
+export class ApiPartialResponseError extends ApiError implements IBuildApiPartialRequestError {
+  protected _options: any;
+
+  type = ETwitterApiError.PartialResponse as const;
+
+  constructor(message: string, options: IBuildApiPartialRequestError) {
+    super(message);
+
+    Error.captureStackTrace(this, this.constructor);
+
+    // Do not show on Node stack trace
+    Object.defineProperty(this, '_options', { value: options });
+  }
+
+  get request(): ClientRequest {
+    return this._options.request;
+  }
+
+  get response(): IncomingMessage {
+    return this._options.response;
+  }
+
+  get responseError(): Error {
+    return this._options.responseError;
+  }
+
+  get rawContent(): string {
+    return this._options.rawContent;
+  }
+
+  toJSON() {
+    return {
+      type: this.type,
+      error: this.responseError,
+    };
+  }
+}
+
 interface IBuildApiResponseError {
   code: number;
   request: ClientRequest;
@@ -138,7 +185,19 @@ export class ApiResponseError extends ApiError implements TwitterApiError, IBuil
     this.code = options.code;
     this.headers = options.headers;
     this.rateLimit = options.rateLimit;
-    this.data = options.data;
+
+    // Fix bad error data payload on some v1 endpoints (see https://github.com/PLhery/node-twitter-api-v2/issues/342)
+    if (options.data && typeof options.data === 'object' && 'error' in options.data && !options.data.errors) {
+      const data = { ...options.data };
+
+      data.errors = [{
+        code: EApiV1ErrorCode.InternalError,
+        message: data.error!,
+      }];
+      this.data = data;
+    } else {
+      this.data = options.data;
+    }
   }
 
   get request(): ClientRequest {
@@ -206,7 +265,7 @@ export enum EApiV1ErrorCode {
   InvalidCoordinates = 3,
   NoLocationFound = 13,
 
-  // Authentification failures
+  // Authentication failures
   AuthenticationFail = 32,
   InvalidOrExpiredToken = 89,
   UnableToVerifyCredentials = 99,

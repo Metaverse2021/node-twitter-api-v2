@@ -1,8 +1,9 @@
 import type TwitterApi from '../client';
 import { TypeOrArrayOf } from './shared.types';
 
-export type TOAuth2Scope = 'tweet.read' | 'users.read' | 'account.follows.read' | 'account.follows.write'
- | 'offline.access' | 'space.read';
+export type TOAuth2Scope = 'tweet.read' | 'tweet.write' | 'tweet.moderate.write' | 'users.read' | 'follows.read' | 'follows.write'
+ | 'offline.access' | 'space.read' | 'mute.read' | 'mute.write' | 'like.read' | 'like.write' | 'list.read' | 'list.write'
+ | 'block.read' | 'block.write' | 'bookmark.read' | 'bookmark.write';
 
 export interface BuildOAuth2RequestLinkArgs {
   scope?: TypeOrArrayOf<TOAuth2Scope> | TypeOrArrayOf<string>;
@@ -39,6 +40,13 @@ export interface RequestTokenResult {
   oauth_callback_confirmed: 'true';
 }
 
+export interface IOAuth2RequestTokenResult {
+  url: string;
+  state: string;
+  codeVerifier: string;
+  codeChallenge: string;
+}
+
 export interface AccessTokenResult {
   oauth_token: string;
   oauth_token_secret: string;
@@ -57,4 +65,12 @@ export interface LoginResult {
   accessToken: string;
   accessSecret: string;
   client: TwitterApi;
+}
+
+export interface IParsedOAuth2TokenResult {
+  client: TwitterApi;
+  expiresIn: number;
+  accessToken: string;
+  scope: TOAuth2Scope[];
+  refreshToken?: string;
 }
