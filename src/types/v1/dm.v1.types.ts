@@ -91,12 +91,12 @@ export interface CreateWelcomeDMEventV1Args {
 // - Responses -
 
 // Responses of DMs (payload replied by API)
-export interface DirectMessageCreateV1 extends RecievedDirectMessageEventV1 {
+export interface DirectMessageCreateV1 extends ReceivedDirectMessageEventV1 {
   type: EDirectMessageEventTypeV1.Create;
   [EDirectMessageEventTypeV1.Create]: ReceivedMessageCreateEventV1;
 }
 
-export interface RecievedDirectMessageEventV1 {
+export interface ReceivedDirectMessageEventV1 {
   type: EDirectMessageEventTypeV1;
   id: string;
   created_timestamp: string;
@@ -115,7 +115,7 @@ export interface ReceivedMessageCreateDataV1 {
   text: string;
   entities: TweetEntitiesV1;
   quick_reply_response?: { type: 'options', metadata?: string };
-  attachment?: MediaEntityV1;
+  attachment?: { type: 'media', media: MediaEntityV1 };
   quick_reply?: MessageCreateQuickReplyV1;
   ctas?: MessageCreateCtaV1[];
 }

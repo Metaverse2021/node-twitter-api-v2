@@ -22,6 +22,7 @@ import type {
   TweetV2BookmarkResult,
 } from '../types';
 import TwitterApiv2LabsReadWrite from '../v2-labs/client.v2.labs.write';
+import { CreateDMConversationParams, PostDMInConversationParams, PostDMInConversationResult } from '../types/v2/dm.v2.types';
 
 /**
  * Base Twitter v2 client with read/write rights.
@@ -234,7 +235,7 @@ export default class TwitterApiv2ReadWrite extends TwitterApiv2ReadOnly {
    * The user (in the path) must match the user context authorizing the request.
    * https://developer.twitter.com/en/docs/twitter-api/users/blocks/api-reference/post-users-user_id-blocking
    *
-   * **Note**: You must specify the currently logged user ID ; you can obtain it through v1.1 API.
+   * **Note**: You must specify the currently logged user ID; you can obtain it through v1.1 API.
    */
   public block(loggedUserId: string, targetUserId: string) {
     return this.post<UserV2BlockResult>('users/:id/blocking', { target_user_id: targetUserId }, { params: { id: loggedUserId } });
@@ -347,5 +348,32 @@ export default class TwitterApiv2ReadWrite extends TwitterApiv2ReadOnly {
    */
   public unpinList(loggedUserId: string, listId: string) {
     return this.delete<ListPinV2Result>('users/:id/pinned_lists/:list_id', undefined, { params: { id: loggedUserId, list_id: listId } });
+  }
+
+  /* Direct messages */
+
+  /**
+   * Creates a Direct Message on behalf of an authenticated user, and adds it to the specified conversation.
+   * https://developer.twitter.com/en/docs/twitter-api/direct-messages/manage/api-reference/post-dm_conversations-dm_conversation_id-messages
+   */
+  public sendDmInConversation(conversationId: string, message: PostDMInConversationParams) {
+    return this.post<PostDMInConversationResult>('dm_conversations/:dm_conversation_id/messages', message, { params: { dm_conversation_id: conversationId } });
+  }
+
+  /**
+   * Creates a one-to-one Direct Message and adds it to the one-to-one conversation.
+   * This method either creates a new one-to-one conversation or retrieves the current conversation and adds the Direct Message to it.
+   * https://developer.twitter.com/en/docs/twitter-api/direct-messages/manage/api-reference/post-dm_conversations-with-participant_id-messages
+   */
+  public sendDmToParticipant(participantId: string, message: PostDMInConversationParams) {
+    return this.post<PostDMInConversationResult>('dm_conversations/with/:participant_id/messages', message, { params: { participant_id: participantId } });
+  }
+
+  /**
+   * Creates a new group conversation and adds a Direct Message to it on behalf of an authenticated user.
+   * https://developer.twitter.com/en/docs/twitter-api/direct-messages/manage/api-reference/post-dm_conversations
+   */
+  public createDmConversation(options: CreateDMConversationParams) {
+    return this.post<PostDMInConversationResult>('dm_conversations', options);
   }
 }

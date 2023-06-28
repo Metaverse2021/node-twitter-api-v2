@@ -74,6 +74,8 @@ import { TweetLikingUsersV2Paginator, TweetRetweetersUsersV2Paginator, UserBlock
 import { isTweetStreamV2ErrorPayload } from '../helpers';
 import TweetStream from '../stream/TweetStream';
 import { PromiseOrType } from '../types/shared.types';
+import { GetDMEventV2Params, GetDMEventV2Result } from '../types/v2/dm.v2.types';
+import { ConversationDMTimelineV2Paginator, FullDMTimelineV2Paginator, OneToOneDMTimelineV2Paginator } from '../paginators/dm.paginator.v2';
 
 /**
  * Base Twitter v2 client with only read right.
@@ -99,13 +101,12 @@ export default class TwitterApiv2ReadOnly extends TwitterApiSubClient {
    * The recent search endpoint returns Tweets from the last seven days that match a search query.
    * https://developer.twitter.com/en/docs/twitter-api/tweets/search/api-reference/get-tweets-search-recent
    */
-  public async search(options: Partial<Tweetv2SearchParams>): Promise<TweetSearchRecentV2Paginator>;
-  public async search(query: string, options?: Partial<Tweetv2SearchParams>): Promise<TweetSearchRecentV2Paginator>;
-  public async search(queryOrOptions: string | Partial<Tweetv2SearchParams>, options: Partial<Tweetv2SearchParams> = {}) {
-    const query = typeof queryOrOptions === 'string' ? queryOrOptions : undefined;
-    const realOptions = typeof queryOrOptions === 'object' && queryOrOptions !== null ? queryOrOptions : options;
-
-    const queryParams = { ...realOptions, query };
+  public async search(options: Tweetv2SearchParams): Promise<TweetSearchRecentV2Paginator>;
+  public async search(query: string, options?: Partial<Tweetv2SearchParams>): Promise<TweetSearchRecentV2Paginator>
+  public async search(queryOrOptions: string | Tweetv2SearchParams, options: Partial<Tweetv2SearchParams> = {}) {
+    const queryParams = typeof queryOrOptions === 'string' ?
+      { ...options, query: queryOrOptions } :
+      { ...queryOrOptions };
     const initialRq = await this.get<Tweetv2SearchResult>('tweets/search/recent', queryParams, { fullResponse: true });
 
     return new TweetSearchRecentV2Paginator({
@@ -602,6 +603,70 @@ export default class TwitterApiv2ReadOnly extends TwitterApiSubClient {
     });
   }
 
+  /* Direct messages */
+
+  /**
+   * Returns a list of Direct Messages for the authenticated user, both sent and received.
+   * Direct Message events are returned in reverse chronological order.
+   * Supports retrieving events from the previous 30 days.
+   *
+   * OAuth 2 scopes: `dm.read`, `tweet.read`, `user.read`
+   *
+   * https://developer.twitter.com/en/docs/twitter-api/direct-messages/lookup/api-reference/get-dm_events
+   */
+  public async listDmEvents(options: Partial<GetDMEventV2Params> = {}) {
+    const initialRq = await this.get<GetDMEventV2Result>('dm_events', options, { fullResponse: true });
+
+    return new FullDMTimelineV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: { ...options },
+    });
+  }
+
+  /**
+   * Returns a list of Direct Messages (DM) events within a 1-1 conversation with the user specified in the participant_id path parameter.
+   * Messages are returned in reverse chronological order.
+   *
+   * OAuth 2 scopes: `dm.read`, `tweet.read`, `user.read`
+   *
+   * https://developer.twitter.com/en/docs/twitter-api/direct-messages/lookup/api-reference/get-dm_conversations-dm_conversation_id-dm_events
+   */
+  public async listDmEventsWithParticipant(participantId: string, options: Partial<GetDMEventV2Params> = {}) {
+    const params = { participant_id: participantId };
+    const initialRq = await this.get<GetDMEventV2Result>('dm_conversations/with/:participant_id/dm_events', options, { fullResponse: true, params });
+
+    return new OneToOneDMTimelineV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: { ...options },
+      sharedParams: params,
+    });
+  }
+
+  /**
+   * Returns a list of Direct Messages within a conversation specified in the dm_conversation_id path parameter.
+   * Messages are returned in reverse chronological order.
+   *
+   * OAuth 2 scopes: `dm.read`, `tweet.read`, `user.read`
+   *
+   * https://developer.twitter.com/en/docs/twitter-api/direct-messages/lookup/api-reference/get-dm_conversations-dm_conversation_id-dm_events
+   */
+  public async listDmEventsOfConversation(dmConversationId: string, options: Partial<GetDMEventV2Params> = {}) {
+    const params = { dm_conversation_id: dmConversationId };
+    const initialRq = await this.get<GetDMEventV2Result>('dm_conversations/:dm_conversation_id/dm_events', options, { fullResponse: true, params });
+
+    return new ConversationDMTimelineV2Paginator({
+      realData: initialRq.data,
+      rateLimit: initialRq.rateLimit!,
+      instance: this,
+      queryParams: { ...options },
+      sharedParams: params,
+    });
+  }
+
   /* Spaces */
 
   /**
@@ -656,6 +721,16 @@ export default class TwitterApiv2ReadOnly extends TwitterApiSubClient {
     return this.get<SpaceV2BuyersResult>('spaces/:id/buyers', options, { params: { id: spaceId } });
   }
 
+  /**
+   * Returns Tweets shared in the requested Spaces.
+   * https://developer.twitter.com/en/docs/twitter-api/spaces/lookup/api-reference/get-spaces-id-tweets
+   *
+   * OAuth2 scope: `users.read`, `tweet.read`, `space.read`
+   */
+  public spaceTweets(spaceId: string, options: Partial<Tweetv2FieldsParams> = {}) {
+    return this.get<TweetV2LookupResult>('spaces/:id/tweets', options, { params: { id: spaceId } });
+  }
+
   /* Streaming API */
 
   /**
@@ -704,6 +779,18 @@ export default class TwitterApiv2ReadOnly extends TwitterApiSubClient {
 
   public sampleStream({ autoConnect, ...options }: Partial<Tweetv2FieldsParams> & { autoConnect?: boolean } = {}) {
     return this.getStream<TweetV2SingleResult>('tweets/sample/stream', options as any, { payloadIsError: isTweetStreamV2ErrorPayload, autoConnect });
+  }
+
+  /**
+   * Streams about 10% of all Tweets in real-time.
+   * https://developer.twitter.com/en/docs/twitter-api/tweets/volume-streams/api-reference/get-tweets-sample10-stream
+   */
+  public sample10Stream(options?: Partial<Tweetv2FieldsParams> & { autoConnect?: true }): Promise<TweetStream<TweetV2SingleResult>>;
+  public sample10Stream(options: Partial<Tweetv2FieldsParams> & { autoConnect: false }): TweetStream<TweetV2SingleResult>;
+  public sample10Stream(options?: Partial<Tweetv2FieldsParams> & { autoConnect?: boolean }): PromiseOrType<TweetStream<TweetV2SingleResult>>;
+
+  public sample10Stream({ autoConnect, ...options }: Partial<Tweetv2FieldsParams> & { autoConnect?: boolean } = {}) {
+    return this.getStream<TweetV2SingleResult>('tweets/sample10/stream', options as any, { payloadIsError: isTweetStreamV2ErrorPayload, autoConnect });
   }
 
   /* Batch compliance */

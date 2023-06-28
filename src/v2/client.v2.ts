@@ -26,6 +26,10 @@ export class TwitterApiv2 extends TwitterApiv2ReadWrite {
 
     return this._labs = new TwitterApiv2Labs(this);
   }
+
+  /** API endpoints */
+
+
 }
 
 export default TwitterApiv2;

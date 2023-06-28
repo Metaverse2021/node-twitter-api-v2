@@ -1,3 +1,47 @@
+1.15.0
+------
+- fix: Add missing client settings when fetching the token #480 (@qfish)
+
+1.14.3
+------
+- fix: support mov video type #478 (@wass08)
+
+1.14.2
+------
+- feat: add subscriber_count to spaces typings #452 (@florrdv)
+- chore: Fix typo #454 (@will2022)
+
+1.14.1
+------
+- feat: add verified_type to user schema #442 (@dkulyk)
+- chore: fix typos and markdown links #443 (@Jiralite)
+
+1.14.0
+------
+- feat: improve search query params #431 (@itsjustbrian)
+- breaking change: DM Ids should be strings #436
+
+1.13.0
+------
+- feat: Add DM events endpoints
+- feat: Add space tweet endpoint
+
+1.12.10
+-------
+- fix: Typing issue in v1 DM medias - ReceivedMessageCreateDataV1 #407 (@secchanu)
+- fix: Allow overriding the content-type header #413 (@alessandrovisentini)
+- fix: readme typo #414 (@vrrdnt)
+
+1.12.9
+------
+- Fix: Add missing expansions/'tweet.fields' item for tweet edition #392
+- friends/followers objects list V1 #391 (@Abdullah-Malik)
+
+1.12.8
+------
+- Feat: Add `edit_history_tweet_ids` to `TweetV2`
+- Feat: Add v1 friends/followers paginators (thanks to @Abdullah-Malik) #380
+
 1.12.7
 ------
 - Fix: Fix Exception throw when response data is truthy but not an object (for example, a raw HTML page) #354
@@ -10,7 +54,7 @@
 
 1.12.5
 ------
-- Fix: Better check for error presence in `ApiResponseError` instanciation
+- Fix: Better check for error presence in `ApiResponseError` instantiation
 
 1.12.4
 ------
@@ -51,7 +95,7 @@
 1.11.2
 ------
 - Fix: .meta is not correctly typed in paginators #231
-- Fix: Catched promise is rejected without ability of catching it later when a request fails and a plugin is used #229
+- Fix: Caught promise is rejected without ability of catching it later when a request fails and a plugin is used #229
 
 1.11.1
 ------
@@ -145,7 +189,7 @@
 - Feat: New option for creating streams, `autoConnect` that is `true` by default ; Setting the value to `false` will cause the `TweetStream` object to be returned immediately (not in a `Promise`), because connection isn't awaited #92
 - Fix: `autoReconnectRetries`: Setting this params to `Infinity` no longer causes the stream reconnection attempts to be delayed to next event loop turn #92
 - Fix: Use `https.request(options)` instead of `https.request(url, options)`, because some people has outdated dependencies that overwrite native Node's exported function and break its signature #94 #96
-- Feat: Next retry timeout computation can be customized by using `.nextRetryTimeout` property of `TweetStream` instance, that is function taking a `tryOccurence` and returning the number of milliseconds to wait before trying to reconnect
+- Feat: Next retry timeout computation can be customized by using `.nextRetryTimeout` property of `TweetStream` instance, that is function taking a `tryOccurrence` and returning the number of milliseconds to wait before trying to reconnect
 
 1.6.0
 -----

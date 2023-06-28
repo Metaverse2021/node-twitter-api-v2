@@ -6,7 +6,7 @@ import { getAppClient, getUserClient } from '../src/test/utils';
 // OAuth 1.0a
 const clientOauth = getUserClient();
 
-describe('Tweet stream API v1.1', () => {
+describe.skip('Tweet stream API v1.1', () => {
   it('Should stream 3 tweets without any network error for statuses/filter using events', async () => {
     const streamv1Filter = await clientOauth.v1.filterStream({ track: 'JavaScript' });
 
@@ -61,7 +61,7 @@ describe('Tweet stream API v2', () => {
     expect(numberOfTweets).to.equal(3);
   }).timeout(1000 * 120);
 
-  it('In 10 seconds, should have the same tweets registred by async iterator and event handler, where stream is manually started', async () => {
+  it('In 10 seconds, should have the same tweets registered by async iterator and event handler, where stream is manually started', async () => {
     const streamV2 = clientBearer.v2.sampleStream({ autoConnect: false });
 
     const eventTweetIds = [] as string[];
